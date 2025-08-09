@@ -5,79 +5,543 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ryuzeen Mini Games</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Source Code Pro', monospace;
-            background-color: #0D1117; /* Cor de fundo principal (bem escura) */
+            background-color: #0D1117;
+            color: #c9d1d9;
         }
-
         .game-card {
-            background-color: #161B22; /* Cor de fundo dos cards */
-            border: 1px solid #30363D; /* Borda sutil */
+            background: linear-gradient(145deg, #1a202c, #2d3748);
+            border: 1px solid #30363D;
             transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
-
         .game-card:hover {
-            transform: translateY(-5px);
-            border-color: #22c55e; /* Verde vibrante no hover */
-            box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+            transform: translateY(-8px) scale(1.03);
+            border-color: #22c55e;
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+        }
+        .title-accent { color: #22c55e; }
+        .page-section { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
+        .page-section.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            display: none;
+        }
+        .game-canvas-container { position: relative; }
+        .game-canvas { background-color: #010409; border: 1px solid #30363D; }
+        .btn-green { background-color: #22c55e; color: #0D1117; transition: background-color 0.3s ease; }
+        .btn-green:hover { background-color: #16a34a; }
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid #4a5568;
+            color: #c9d1d9;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #30363D;
+            border-color: #4a5568;
         }
 
-        .title-accent {
-            color: #22c55e; /* Verde vibrante para o título */
+        #side-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
+        #side-menu.open { transform: translateX(0); }
+        #menu-overlay { transition: opacity 0.3s ease-in-out; }
+        
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .blinking-text { animation: blink 1.5s linear infinite; }
+
+        .setting-option {
+            border: 2px solid #30363D;
+            transition: all 0.2s ease-in-out;
         }
+        .setting-option:hover {
+            border-color: #4a5568;
+            background-color: #1a202c;
+        }
+        .setting-option.selected {
+            border-color: #22c55e;
+            background-color: #22c55e20;
+            color: #22c55e;
+            font-weight: bold;
+        }
+        /* Color Picker Style */
+        .color-picker-wrapper input[type="color"] {
+            -webkit-appearance: none;
+            width: 48px;
+            height: 32px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: 1px solid #4a5568; border-radius: 4px; }
+
+        /* Toggle Switch */
+        .toggle-dot { transition: all 0.3s ease-in-out; }
+        input:checked ~ .toggle-bg { background-color: #22c55e; }
+        input:checked ~ .toggle-dot { transform: translateX(100%); }
     </style>
 </head>
 <body class="text-gray-300">
 
-    <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        
-        <!-- Título Principal -->
-        <header class="text-center mb-10 md:mb-16">
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white">
-                Ryuzeen <span class="title-accent">Mini Games</span>
-            </h1>
-            <p class="text-gray-400 mt-3 text-base sm:text-lg">
-                Selecione um desafio e inicie o programa.
-            </p>
-        </header>
+    <!-- Menu Lateral -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden opacity-0"></div>
+    <nav id="side-menu" class="fixed top-0 right-0 h-full w-64 bg-[#161B22] border-l border-[#30363D] z-50 p-6">
+        <h2 class="text-2xl font-bold text-white mb-8">Jogos</h2>
+        <ul>
+            <li><a href="#" id="nav-home" class="block py-3 text-lg hover:text-green-400 transition">Início</a></li>
+            <li><a href="#" id="nav-snake" class="block py-3 text-lg text-green-400 font-bold transition">Jogo da Cobrinha</a></li>
+            <li class="opacity-50"><span class="block py-3 text-lg cursor-not-allowed">Jogo da Velha</span></li>
+            <li class="opacity-50"><span class="block py-3 text-lg cursor-not-allowed">Jogo da Memória</span></li>
+        </ul>
+    </nav>
 
-        <!-- Grade de Seleção de Jogos -->
+    <!-- Seção do Menu Principal -->
+    <div id="main-menu" class="page-section min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-10 md:mb-16">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white">Ryuzeen <span class="title-accent">Mini Games</span></h1>
+            <p class="text-gray-400 mt-3 text-base sm:text-lg">Selecione um desafio e inicie o programa.</p>
+        </header>
         <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
-            
-            <!-- Card Jogo da Cobrinha -->
-            <a href="#" class="game-card group block rounded-lg p-6 text-center">
+            <a href="#" id="select-snake-game" class="game-card group block rounded-lg p-6 text-center cursor-pointer">
                 <div class="text-5xl mb-4">🐍</div>
                 <h2 class="text-2xl font-semibold text-white mb-2">Jogo da Cobrinha</h2>
-                <p class="text-gray-400 text-sm">
-                    Guie a cobra para consumir os alvos e aumentar sua pontuação.
-                </p>
+                <p class="text-gray-400 text-sm">Guie a cobra para consumir os alvos.</p>
             </a>
-
-            <!-- Card Jogo da Velha -->
-            <a href="#" class="game-card group block rounded-lg p-6 text-center">
-                <div class="text-5xl mb-4">X | O</div>
-                <h2 class="text-2xl font-semibold text-white mb-2">Jogo da Velha</h2>
-                <p class="text-gray-400 text-sm">
-                    O clássico algoritmo de lógica. Alinhe três símbolos para vencer.
-                </p>
-            </a>
-
-            <!-- Card Jogo da Memória -->
-            <a href="#" class="game-card group block rounded-lg p-6 text-center">
-                <div class="text-5xl mb-4">🧩</div>
-                <h2 class="text-2xl font-semibold text-white mb-2">Jogo da Memória</h2>
-                <p class="text-gray-400 text-sm">
-                    Teste sua memória cache encontrando todos os pares correspondentes.
-                </p>
-            </a>
-
+            <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
+                <div class="text-5xl mb-4">X | O</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Velha</h2><p class="text-gray-400 text-sm">O clássico algoritmo de lógica.</p>
+            </div>
+            <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
+                <div class="text-5xl mb-4">🧩</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Memória</h2><p class="text-gray-400 text-sm">Encontre todos os pares.</p>
+            </div>
         </main>
-
     </div>
 
+    <!-- Seção de Configurações do Jogo da Cobrinha -->
+    <div id="snake-settings-section" class="page-section hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-8">Configurar <span class="title-accent">Jogo da Cobrinha</span></h1>
+        <div class="w-full max-w-2xl bg-[#161B22] p-6 rounded-lg border border-[#30363D] space-y-8">
+            <!-- Configurações do Jogo -->
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Tamanho do Mapa</h3>
+                <div id="map-size-options" class="grid grid-cols-3 gap-4">
+                    <button data-value="300" class="setting-option p-3 rounded-md">Pequeno</button>
+                    <button data-value="400" class="setting-option p-3 rounded-md selected">Médio</button>
+                    <button data-value="500" class="setting-option p-3 rounded-md">Grande</button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Velocidade</h3>
+                <div id="speed-options" class="grid grid-cols-3 gap-4">
+                    <button data-value="150" class="setting-option p-3 rounded-md">Lenta</button>
+                    <button data-value="100" class="setting-option p-3 rounded-md selected">Média</button>
+                    <button data-value="60" class="setting-option p-3 rounded-md">Rápida</button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Recompensas no Mapa</h3>
+                <div id="food-count-options" class="grid grid-cols-3 gap-4 max-w-xs mx-auto">
+                    <button data-value="1" class="setting-option p-2 rounded-md selected">1</button>
+                    <button data-value="2" class="setting-option p-2 rounded-md">2</button>
+                    <button data-value="3" class="setting-option p-2 rounded-md">3</button>
+                </div>
+            </div>
+            
+            <!-- Configurações Visuais e de Áudio -->
+            <div class="border-t border-gray-700 pt-8 space-y-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Cor da Cobrinha</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="color-picker" class="text-sm text-gray-400 block mb-1">Cor Inicial</label>
+                            <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
+                                <input type="color" id="color-picker" value="#22c55e">
+                                <input type="text" id="hex-input" value="#22c55e" class="bg-transparent w-full focus:outline-none font-mono">
+                            </div>
+                        </div>
+                        <div id="gradient-end-color-wrapper">
+                            <label for="gradient-end-color-picker" class="text-sm text-gray-400 block mb-1">Cor Final (Degradê)</label>
+                            <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
+                                <input type="color" id="gradient-end-color-picker" value="#000000">
+                                <input type="text" id="gradient-end-hex-input" value="#000000" class="bg-transparent w-full focus:outline-none font-mono">
+                            </div>
+                        </div>
+                    </div>
+                    <label for="gradient-toggle" class="flex items-center cursor-pointer mt-4">
+                        <div class="relative">
+                            <input type="checkbox" id="gradient-toggle" class="sr-only" checked>
+                            <div class="toggle-bg block bg-gray-600 w-14 h-8 rounded-full"></div>
+                            <div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full"></div>
+                        </div>
+                        <div class="ml-3 text-gray-400">Ativar Efeito Degradê</div>
+                    </label>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Volume (SFX)</h3>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full">
+                    <p class="text-xs text-gray-500 mt-1">Desative o barulho do jogo movendo para a esquerda.</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 flex space-x-4">
+            <button id="back-to-main-menu" class="btn-secondary py-3 px-6 rounded-lg font-semibold transition">Voltar</button>
+            <button id="start-game-btn" class="btn-green font-bold py-3 px-8 rounded-lg text-lg">INICIAR JOGO</button>
+        </div>
+    </div>
+    
+    <!-- Seção do Jogo da Cobrinha -->
+    <div id="snake-game-section" class="page-section hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <header class="w-full max-w-md lg:max-w-xl flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Jogo da <span class="title-accent">Cobrinha</span></h1>
+                <p id="score" class="text-lg flex items-center">👑<span class="ml-2">0</span></p>
+            </div>
+            <button id="menu-toggle" class="z-50 p-2">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </header>
+        <div class="game-canvas-container">
+            <canvas id="game-canvas" width="400" height="400" class="game-canvas rounded-lg"></canvas>
+            <div id="start-game-overlay" class="absolute inset-0 bg-[#010409e6] flex flex-col items-center justify-center rounded-lg">
+                <p class="text-xl blinking-text">Pressione uma tecla para começar</p>
+            </div>
+        </div>
+        <div id="game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-20">
+            <div class="bg-[#161B22] p-8 rounded-lg text-center shadow-lg border border-[#30363D]">
+                <h2 class="text-3xl font-bold text-red-500 mb-2">GAME OVER</h2>
+                <p id="final-score" class="text-xl mb-6">Seu score: 0</p>
+                <button id="restart-game" class="btn-green font-bold py-2 px-6 rounded-lg text-lg">Jogar Novamente</button>
+                <button id="back-to-settings-btn" class="btn-secondary font-semibold py-2 px-6 rounded-lg text-lg mt-3 w-full">Alterar Configurações</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DO DOM ---
+        const mainMenu = document.getElementById('main-menu');
+        const snakeSettingsSection = document.getElementById('snake-settings-section');
+        const snakeGameSection = document.getElementById('snake-game-section');
+        const selectSnakeGameBtn = document.getElementById('select-snake-game');
+        const backToMainMenuBtn = document.getElementById('back-to-main-menu');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const menuToggle = document.getElementById('menu-toggle');
+        const sideMenu = document.getElementById('side-menu');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const navHome = document.getElementById('nav-home');
+        const navSnake = document.getElementById('nav-snake');
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score').querySelector('span');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const finalScoreElement = document.getElementById('final-score');
+        const restartGameBtn = document.getElementById('restart-game');
+        const backToSettingsBtn = document.getElementById('back-to-settings-btn');
+        const startGameOverlay = document.getElementById('start-game-overlay');
+        const volumeSlider = document.getElementById('volume-slider');
+        const colorPicker = document.getElementById('color-picker');
+        const hexInput = document.getElementById('hex-input');
+        const gradientToggle = document.getElementById('gradient-toggle');
+        const gradientEndColorWrapper = document.getElementById('gradient-end-color-wrapper');
+        const gradientEndColorPicker = document.getElementById('gradient-end-color-picker');
+        const gradientEndHexInput = document.getElementById('gradient-end-hex-input');
+
+        let gameSettings = {
+            mapSize: 400,
+            speed: 100,
+            snakeColor: '#22c55e',
+            foodCount: 1,
+            volume: 50,
+            gradientEnabled: true,
+            gradientEndColor: '#000000'
+        };
+
+        // --- EFEITOS SONOROS ---
+        const sfxVolume = new Tone.Volume(-12).toDestination();
+        const collectSound = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).connect(sfxVolume);
+        const gameOverSound = new Tone.Synth({ oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.4 } }).connect(sfxVolume);
+        const startHissSound = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0 } }).connect(sfxVolume);
+
+        // --- LÓGICA DE NAVEGAÇÃO ---
+        function switchPage(pageToHide, pageToShow) {
+            if (pageToHide) pageToHide.classList.add('hidden');
+            if (pageToShow) pageToShow.classList.remove('hidden');
+        }
+
+        function toggleMenu(show) {
+            if (show) {
+                sideMenu.classList.add('open');
+                menuOverlay.classList.remove('hidden');
+                setTimeout(() => menuOverlay.classList.remove('opacity-0'), 10);
+            } else {
+                sideMenu.classList.remove('open');
+                menuOverlay.classList.add('opacity-0');
+                setTimeout(() => menuOverlay.classList.add('hidden'), 300);
+            }
+        }
+        
+        selectSnakeGameBtn.addEventListener('click', (e) => { e.preventDefault(); switchPage(mainMenu, snakeSettingsSection); });
+        backToMainMenuBtn.addEventListener('click', () => switchPage(snakeSettingsSection, mainMenu));
+        startGameBtn.addEventListener('click', () => { switchPage(snakeSettingsSection, snakeGameSection); applySettingsAndReset(); });
+        backToSettingsBtn.addEventListener('click', () => { switchPage(snakeGameSection, snakeSettingsSection); });
+        menuToggle.addEventListener('click', () => toggleMenu(true));
+        menuOverlay.addEventListener('click', () => toggleMenu(false));
+        
+        function getActivePage() { return document.querySelector('.page-section:not(.hidden)'); }
+        navHome.addEventListener('click', (e) => { e.preventDefault(); toggleMenu(false); switchPage(getActivePage(), mainMenu); stopGameLoops(); });
+        navSnake.addEventListener('click', (e) => { e.preventDefault(); toggleMenu(false); const activePage = getActivePage(); if (activePage !== snakeSettingsSection) { switchPage(activePage, snakeSettingsSection); stopGameLoops(); } });
+
+        // --- LÓGICA DAS CONFIGURAÇÕES ---
+        function setupOptionSelection(containerId, settingKey) {
+            const container = document.getElementById(containerId);
+            container.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-value]');
+                if (!target) return;
+                gameSettings[settingKey] = Number(target.dataset.value);
+                container.querySelectorAll('[data-value]').forEach(el => el.classList.remove('selected'));
+                target.classList.add('selected');
+            });
+        }
+        setupOptionSelection('map-size-options', 'mapSize');
+        setupOptionSelection('speed-options', 'speed');
+        setupOptionSelection('food-count-options', 'foodCount');
+
+        volumeSlider.addEventListener('input', (e) => {
+            gameSettings.volume = Number(e.target.value);
+            if (gameSettings.volume === 0) {
+                sfxVolume.volume.value = -Infinity;
+            } else {
+                sfxVolume.volume.value = (gameSettings.volume / 100) * 40 - 40;
+            }
+        });
+
+        colorPicker.addEventListener('input', (e) => { gameSettings.snakeColor = e.target.value; hexInput.value = e.target.value; });
+        hexInput.addEventListener('input', (e) => { const hex = e.target.value; if (/^#[0-9A-F]{6}$/i.test(hex)) { gameSettings.snakeColor = hex; colorPicker.value = hex; } });
+        
+        gradientEndColorPicker.addEventListener('input', (e) => { gameSettings.gradientEndColor = e.target.value; gradientEndHexInput.value = e.target.value; });
+        gradientEndHexInput.addEventListener('input', (e) => { const hex = e.target.value; if (/^#[0-9A-F]{6}$/i.test(hex)) { gameSettings.gradientEndColor = hex; gradientEndColorPicker.value = hex; } });
+
+        gradientToggle.addEventListener('change', (e) => {
+            gameSettings.gradientEnabled = e.target.checked;
+            gradientEndColorWrapper.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        // --- LÓGICA DO JOGO DA COBRINHA ---
+        const gridSize = 20;
+        let snake, foods, score, direction, dx, dy, gameLogicTimeout, renderLoopId, gameStarted;
+        let oldSnake = [], lastTickTime = 0;
+
+        function applySettingsAndReset() {
+            canvas.width = gameSettings.mapSize;
+            canvas.height = gameSettings.mapSize;
+            const canvasContainer = document.querySelector('.game-canvas-container');
+            canvasContainer.style.width = `${gameSettings.mapSize}px`;
+            canvasContainer.style.height = `${gameSettings.mapSize}px`;
+            document.querySelector('#snake-game-section header').style.maxWidth = `${gameSettings.mapSize}px`;
+            resetGame();
+        }
+
+        function initGameVariables() {
+            const startPos = Math.floor((gameSettings.mapSize / gridSize) / 2) * gridSize;
+            snake = [{ x: startPos, y: startPos }];
+            oldSnake = JSON.parse(JSON.stringify(snake));
+            foods = [];
+            score = 0;
+            direction = 'RIGHT';
+            dx = 0; dy = 0;
+            gameStarted = false;
+            scoreElement.textContent = '0';
+            finalScoreElement.textContent = 'Seu score: 0';
+            for(let i = 0; i < gameSettings.foodCount; i++) generateFood();
+        }
+        
+        function stopGameLoops() {
+            clearTimeout(gameLogicTimeout);
+            cancelAnimationFrame(renderLoopId);
+        }
+
+        function resetGame() {
+            stopGameLoops();
+            initGameVariables();
+            gameOverModal.classList.add('hidden');
+            startGameOverlay.classList.remove('hidden');
+            renderLoop();
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function interpolateColor(color1, color2, factor) {
+            let result = color1.slice();
+            for (let i = 0; i < 3; i++) {
+                result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
+            }
+            return `rgb(${result[0]}, ${result[1]}, ${result[2]})`;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#30363D';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x <= canvas.width; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let y = 0; y <= canvas.height; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+        }
+        
+        function draw(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            ctx.font = `${gridSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            foods.forEach(food => { ctx.fillText('🍎', food.x + gridSize / 2, food.y + gridSize / 2); });
+            
+            const startColor = hexToRgb(gameSettings.snakeColor);
+
+            snake.forEach((part, index) => {
+                const oldPart = oldSnake[index] || part;
+                const renderX = oldPart.x + (part.x - oldPart.x) * progress;
+                const renderY = oldPart.y + (part.y - oldPart.y) * progress;
+
+                if (gameSettings.gradientEnabled && startColor) {
+                    const endColor = hexToRgb(gameSettings.gradientEndColor);
+                    const factor = snake.length > 1 ? index / (snake.length - 1) : 0;
+                    ctx.fillStyle = interpolateColor([startColor.r, startColor.g, startColor.b], [endColor.r, endColor.g, endColor.b], factor);
+                } else {
+                    ctx.fillStyle = gameSettings.snakeColor;
+                }
+                ctx.fillRect(renderX, renderY, gridSize, gridSize);
+
+                if (index === 0) {
+                    ctx.fillStyle = '#FFFFFF';
+                    const eyeSize = gridSize / 5;
+                    const eyeOffset = gridSize / 4;
+                    // Eye drawing logic...
+                    switch(direction) {
+                        case 'RIGHT':
+                            ctx.fillRect(renderX + gridSize - eyeSize - eyeOffset, renderY + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(renderX + gridSize - eyeSize - eyeOffset, renderY + gridSize - eyeSize - eyeOffset, eyeSize, eyeSize);
+                            break;
+                        case 'LEFT':
+                            ctx.fillRect(renderX + eyeOffset, renderY + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(renderX + eyeOffset, renderY + gridSize - eyeSize - eyeOffset, eyeSize, eyeSize);
+                            break;
+                        case 'UP':
+                            ctx.fillRect(renderX + eyeOffset, renderY + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(renderX + gridSize - eyeSize - eyeOffset, renderY + eyeOffset, eyeSize, eyeSize);
+                            break;
+                        case 'DOWN':
+                            ctx.fillRect(renderX + eyeOffset, renderY + gridSize - eyeSize - eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(renderX + gridSize - eyeSize - eyeOffset, renderY + gridSize - eyeSize - eyeOffset, eyeSize, eyeSize);
+                            break;
+                    }
+                }
+            });
+        }
+
+        function generateFood() {
+            let food = {
+                x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+                y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
+            };
+            if (snake.some(part => part.x === food.x && part.y === food.y) || foods.some(f => f.x === food.x && f.y === food.y)) {
+                generateFood();
+            } else {
+                foods.push(food);
+            }
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+            
+            const foodIndex = foods.findIndex(f => f.x === head.x && f.y === head.y);
+            if (foodIndex > -1) {
+                score++;
+                scoreElement.textContent = score;
+                foods.splice(foodIndex, 1);
+                generateFood();
+                collectSound.triggerAttackRelease("C5", "8n");
+            } else {
+                snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return true;
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) return true;
+            }
+            return false;
+        }
+        
+        function gameLogicLoop() {
+            if (!gameStarted) return;
+            
+            oldSnake = JSON.parse(JSON.stringify(snake));
+            moveSnake();
+
+            if (checkCollision()) {
+                gameStarted = false;
+                finalScoreElement.textContent = `Seu score: ${score}`;
+                gameOverModal.classList.remove('hidden');
+                gameOverSound.triggerAttackRelease("C3", "4n");
+                return;
+            }
+            
+            lastTickTime = Date.now();
+            gameLogicTimeout = setTimeout(gameLogicLoop, gameSettings.speed);
+        }
+
+        function renderLoop() {
+            const now = Date.now();
+            const elapsed = now - lastTickTime;
+            const progress = gameStarted ? Math.min(elapsed / gameSettings.speed, 1) : 0;
+            
+            draw(progress);
+            renderLoopId = requestAnimationFrame(renderLoop);
+        }
+
+        function handleKeyPress(event) {
+            if (!snakeGameSection.contains(document.activeElement) && !mainMenu.classList.contains('hidden')) return;
+
+            const keyPressed = event.key;
+            const goingUp = direction === 'UP';
+            const goingDown = direction === 'DOWN';
+            const goingRight = direction === 'RIGHT';
+            const goingLeft = direction === 'LEFT';
+            let keyIsValid = false;
+            
+            if ((keyPressed === 'ArrowLeft' || keyPressed.toLowerCase() === 'a') && !goingRight) {
+                direction = 'LEFT'; dx = -gridSize; dy = 0; keyIsValid = true;
+            } else if ((keyPressed === 'ArrowUp' || keyPressed.toLowerCase() === 'w') && !goingDown) {
+                direction = 'UP'; dx = 0; dy = -gridSize; keyIsValid = true;
+            } else if ((keyPressed === 'ArrowRight' || keyPressed.toLowerCase() === 'd') && !goingLeft) {
+                direction = 'RIGHT'; dx = gridSize; dy = 0; keyIsValid = true;
+            } else if ((keyPressed === 'ArrowDown' || keyPressed.toLowerCase() === 's') && !goingUp) {
+                direction = 'DOWN'; dx = 0; dy = gridSize; keyIsValid = true;
+            }
+
+            if (keyIsValid && !gameStarted && !snakeGameSection.classList.contains('hidden')) {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                gameStarted = true;
+                startHissSound.triggerAttackRelease("4n");
+                startGameOverlay.classList.add('hidden');
+                lastTickTime = Date.now();
+                gameLogicLoop();
+            }
+        }
+        
+        document.addEventListener('keydown', handleKeyPress);
+        restartGameBtn.addEventListener('click', resetGame);
+
+    </script>
 </body>
 </html>
