@@ -15,17 +15,40 @@
             background-color: #0D1117;
             color: #c9d1d9;
         }
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        .content-container {
+            background: rgba(13, 17, 23, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(48, 54, 61, 0.5);
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 100%;
+        }
         .game-card {
-            background: linear-gradient(145deg, #1a202c, #2d3748);
+            background: rgba(22, 27, 34, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             border: 1px solid #30363D;
             transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .game-card:hover {
             transform: translateY(-8px) scale(1.03);
             border-color: #22c55e;
-            box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.4), 0 0 10px rgba(34, 197, 94, 0.3) inset;
         }
-        .title-accent { color: #22c55e; }
+        .title-accent { 
+            color: #22c55e; 
+            text-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+        }
         .page-section { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
         .page-section.hidden {
             opacity: 0;
@@ -68,7 +91,6 @@
             color: #22c55e;
             font-weight: bold;
         }
-        /* Color Picker Style */
         .color-picker-wrapper input[type="color"] {
             -webkit-appearance: none;
             width: 48px;
@@ -80,13 +102,14 @@
         .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         .color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: 1px solid #4a5568; border-radius: 4px; }
 
-        /* Toggle Switch */
         .toggle-dot { transition: all 0.3s ease-in-out; }
         input:checked ~ .toggle-bg { background-color: #22c55e; }
         input:checked ~ .toggle-dot { transform: translateX(100%); }
     </style>
 </head>
 <body class="text-gray-300">
+
+    <canvas id="background-canvas"></canvas>
 
     <!-- Menu Lateral -->
     <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden opacity-0"></div>
@@ -102,94 +125,98 @@
 
     <!-- Seção do Menu Principal -->
     <div id="main-menu" class="page-section min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
-        <header class="text-center mb-10 md:mb-16">
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white">Ryuzeen <span class="title-accent">Mini Games</span></h1>
-            <p class="text-gray-400 mt-3 text-base sm:text-lg">Selecione um desafio e inicie o programa.</p>
-        </header>
-        <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full max-w-6xl">
-            <a href="#" id="select-snake-game" class="game-card group block rounded-lg p-6 text-center cursor-pointer">
-                <div class="text-5xl mb-4">🐍</div>
-                <h2 class="text-2xl font-semibold text-white mb-2">Jogo da Cobrinha</h2>
-                <p class="text-gray-400 text-sm">Guie a cobra para consumir os alvos.</p>
-            </a>
-            <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
-                <div class="text-5xl mb-4">X | O</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Velha</h2><p class="text-gray-400 text-sm">O clássico algoritmo de lógica.</p>
-            </div>
-            <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
-                <div class="text-5xl mb-4">🧩</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Memória</h2><p class="text-gray-400 text-sm">Encontre todos os pares.</p>
-            </div>
-        </main>
+        <div class="content-container max-w-7xl">
+            <header class="text-center mb-10 md:mb-16">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-white">Ryuzeen <span class="title-accent">Mini Games</span></h1>
+                <p class="text-gray-400 mt-3 text-base sm:text-lg">Selecione um desafio e inicie o programa.</p>
+            </header>
+            <main class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 w-full">
+                <a href="#" id="select-snake-game" class="game-card group block rounded-lg p-6 text-center cursor-pointer">
+                    <div class="text-5xl mb-4">🐍</div>
+                    <h2 class="text-2xl font-semibold text-white mb-2">Jogo da Cobrinha</h2>
+                    <p class="text-gray-400 text-sm">Guie a cobra para consumir os alvos.</p>
+                </a>
+                <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
+                    <div class="text-5xl mb-4">X | O</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Velha</h2><p class="text-gray-400 text-sm">O clássico algoritmo de lógica.</p>
+                </div>
+                <div class="game-card group block rounded-lg p-6 text-center opacity-50 cursor-not-allowed">
+                    <div class="text-5xl mb-4">🧩</div><h2 class="text-2xl font-semibold text-white mb-2">Jogo da Memória</h2><p class="text-gray-400 text-sm">Encontre todos os pares.</p>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- Seção de Configurações do Jogo da Cobrinha -->
     <div id="snake-settings-section" class="page-section hidden min-h-screen flex flex-col items-center justify-center p-4">
-        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-8">Configurar <span class="title-accent">Jogo da Cobrinha</span></h1>
-        <div class="w-full max-w-2xl bg-[#161B22] p-6 rounded-lg border border-[#30363D] space-y-8">
-            <!-- Configurações do Jogo -->
-            <div>
-                <h3 class="text-lg font-semibold mb-3">Tamanho do Mapa</h3>
-                <div id="map-size-options" class="grid grid-cols-3 gap-4">
-                    <button data-value="300" class="setting-option p-3 rounded-md">Pequeno</button>
-                    <button data-value="400" class="setting-option p-3 rounded-md selected">Médio</button>
-                    <button data-value="500" class="setting-option p-3 rounded-md">Grande</button>
-                </div>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold mb-3">Velocidade</h3>
-                <div id="speed-options" class="grid grid-cols-3 gap-4">
-                    <button data-value="150" class="setting-option p-3 rounded-md">Lenta</button>
-                    <button data-value="100" class="setting-option p-3 rounded-md selected">Média</button>
-                    <button data-value="60" class="setting-option p-3 rounded-md">Rápida</button>
-                </div>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold mb-3">Recompensas no Mapa</h3>
-                <div id="food-count-options" class="grid grid-cols-3 gap-4 max-w-xs mx-auto">
-                    <button data-value="1" class="setting-option p-2 rounded-md selected">1</button>
-                    <button data-value="2" class="setting-option p-2 rounded-md">2</button>
-                    <button data-value="3" class="setting-option p-2 rounded-md">3</button>
-                </div>
-            </div>
-            
-            <!-- Configurações Visuais e de Áudio -->
-            <div class="border-t border-gray-700 pt-8 space-y-8">
+        <div class="content-container max-w-2xl">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-8 text-center">Configurar <span class="title-accent">Jogo da Cobrinha</span></h1>
+            <div class="w-full bg-[#161B22] p-6 rounded-lg border border-[#30363D] space-y-8">
+                <!-- Configurações do Jogo -->
                 <div>
-                    <h3 class="text-lg font-semibold mb-3">Cor da Cobrinha</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="color-picker" class="text-sm text-gray-400 block mb-1">Cor Inicial</label>
-                            <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
-                                <input type="color" id="color-picker" value="#22c55e">
-                                <input type="text" id="hex-input" value="#22c55e" class="bg-transparent w-full focus:outline-none font-mono">
-                            </div>
-                        </div>
-                        <div id="gradient-end-color-wrapper">
-                            <label for="gradient-end-color-picker" class="text-sm text-gray-400 block mb-1">Cor Final (Degradê)</label>
-                            <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
-                                <input type="color" id="gradient-end-color-picker" value="#000000">
-                                <input type="text" id="gradient-end-hex-input" value="#000000" class="bg-transparent w-full focus:outline-none font-mono">
-                            </div>
-                        </div>
+                    <h3 class="text-lg font-semibold mb-3">Tamanho do Mapa</h3>
+                    <div id="map-size-options" class="grid grid-cols-3 gap-4">
+                        <button data-value="300" class="setting-option p-3 rounded-md">Pequeno</button>
+                        <button data-value="400" class="setting-option p-3 rounded-md selected">Médio</button>
+                        <button data-value="500" class="setting-option p-3 rounded-md">Grande</button>
                     </div>
-                    <label for="gradient-toggle" class="flex items-center cursor-pointer mt-4">
-                        <div class="relative">
-                            <input type="checkbox" id="gradient-toggle" class="sr-only" checked>
-                            <div class="toggle-bg block bg-gray-600 w-14 h-8 rounded-full"></div>
-                            <div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full"></div>
-                        </div>
-                        <div class="ml-3 text-gray-400">Ativar Efeito Degradê</div>
-                    </label>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold mb-2">Volume (SFX)</h3>
-                    <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full">
-                    <p class="text-xs text-gray-500 mt-1">Desative o barulho do jogo movendo para a esquerda.</p>
+                    <h3 class="text-lg font-semibold mb-3">Velocidade</h3>
+                    <div id="speed-options" class="grid grid-cols-3 gap-4">
+                        <button data-value="150" class="setting-option p-3 rounded-md">Lenta</button>
+                        <button data-value="100" class="setting-option p-3 rounded-md selected">Média</button>
+                        <button data-value="60" class="setting-option p-3 rounded-md">Rápida</button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Recompensas no Mapa</h3>
+                    <div id="food-count-options" class="grid grid-cols-3 gap-4 max-w-xs mx-auto">
+                        <button data-value="1" class="setting-option p-2 rounded-md selected">1</button>
+                        <button data-value="2" class="setting-option p-2 rounded-md">2</button>
+                        <button data-value="3" class="setting-option p-2 rounded-md">3</button>
+                    </div>
+                </div>
+                
+                <!-- Configurações Visuais e de Áudio -->
+                <div class="border-t border-gray-700 pt-8 space-y-8">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Cor da Cobrinha</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="color-picker" class="text-sm text-gray-400 block mb-1">Cor Inicial</label>
+                                <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
+                                    <input type="color" id="color-picker" value="#22c55e">
+                                    <input type="text" id="hex-input" value="#22c55e" class="bg-transparent w-full focus:outline-none font-mono">
+                                </div>
+                            </div>
+                            <div id="gradient-end-color-wrapper">
+                                <label for="gradient-end-color-picker" class="text-sm text-gray-400 block mb-1">Cor Final (Degradê)</label>
+                                <div class="color-picker-wrapper flex items-center gap-4 bg-gray-900 p-2 rounded-md">
+                                    <input type="color" id="gradient-end-color-picker" value="#000000">
+                                    <input type="text" id="gradient-end-hex-input" value="#000000" class="bg-transparent w-full focus:outline-none font-mono">
+                                </div>
+                            </div>
+                        </div>
+                        <label for="gradient-toggle" class="flex items-center cursor-pointer mt-4">
+                            <div class="relative">
+                                <input type="checkbox" id="gradient-toggle" class="sr-only" checked>
+                                <div class="toggle-bg block bg-gray-600 w-14 h-8 rounded-full"></div>
+                                <div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full"></div>
+                            </div>
+                            <div class="ml-3 text-gray-400">Ativar Efeito Degradê</div>
+                        </label>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Volume (SFX)</h3>
+                        <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full">
+                        <p class="text-xs text-gray-500 mt-1">Desative o barulho do jogo movendo para a esquerda.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="mt-8 flex space-x-4">
-            <button id="back-to-main-menu" class="btn-secondary py-3 px-6 rounded-lg font-semibold transition">Voltar</button>
-            <button id="start-game-btn" class="btn-green font-bold py-3 px-8 rounded-lg text-lg">INICIAR JOGO</button>
+            <div class="mt-8 flex space-x-4 justify-center">
+                <button id="back-to-main-menu" class="btn-secondary py-3 px-6 rounded-lg font-semibold transition">Voltar</button>
+                <button id="start-game-btn" class="btn-green font-bold py-3 px-8 rounded-lg text-lg">INICIAR JOGO</button>
+            </div>
         </div>
     </div>
     
@@ -225,6 +252,7 @@
         const mainMenu = document.getElementById('main-menu');
         const snakeSettingsSection = document.getElementById('snake-settings-section');
         const snakeGameSection = document.getElementById('snake-game-section');
+        const bgCanvas = document.getElementById('background-canvas');
         const selectSnakeGameBtn = document.getElementById('select-snake-game');
         const backToMainMenuBtn = document.getElementById('back-to-main-menu');
         const startGameBtn = document.getElementById('start-game-btn');
@@ -269,6 +297,13 @@
         function switchPage(pageToHide, pageToShow) {
             if (pageToHide) pageToHide.classList.add('hidden');
             if (pageToShow) pageToShow.classList.remove('hidden');
+
+            // Controla a visibilidade do background animado
+            if (pageToShow === mainMenu) {
+                bgCanvas.style.display = 'block';
+            } else {
+                bgCanvas.style.display = 'none';
+            }
         }
 
         function toggleMenu(show) {
@@ -541,6 +576,60 @@
         
         document.addEventListener('keydown', handleKeyPress);
         restartGameBtn.addEventListener('click', resetGame);
+        
+        // --- BACKGROUND ANIMATION ---
+        const bgCtx = bgCanvas.getContext('2d');
+        
+        let animationFrameId;
+
+        function setupBackground() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            
+            const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+            const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const nums = '0123456789';
+            const alphabet = katakana + latin + nums;
+            
+            const fontSize = 16;
+            const columns = bgCanvas.width / fontSize;
+            
+            const rainDrops = [];
+            for(let x = 0; x < columns; x++) {
+                rainDrops[x] = 1;
+            }
+            
+            function drawBackground() {
+                bgCtx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                
+                bgCtx.fillStyle = '#22c55e';
+                bgCtx.font = fontSize + 'px monospace';
+                
+                for(let i = 0; i < rainDrops.length; i++) {
+                    const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                    bgCtx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                    
+                    if(rainDrops[i] * fontSize > bgCanvas.height && Math.random() > 0.975) {
+                        rainDrops[i] = 0;
+                    }
+                    rainDrops[i]++;
+                }
+            }
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            function animate() {
+                drawBackground();
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        window.addEventListener('resize', setupBackground);
+        setupBackground();
 
     </script>
 </body>
